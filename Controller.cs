@@ -23,45 +23,56 @@ namespace opg_5_tcp_server
             stream_reader = new StreamReader(network_stream);
             stream_writer = new StreamWriter(network_stream);
 
-            while (true)
+            string cmd = stream_reader.ReadLine();
+            System.Console.WriteLine(cmd);
+            while (cmd.ToLower() != "end")
             {
-                string cmd = stream_reader.ReadLine();
-                //  Create an exit route for the client loop
-                if (cmd.ToLower() == "end")
+                try
                 {
-                    send_message("user disconnected");
-                    Console.WriteLine("user disconnected");
+                    check_protocol(cmd);
+                    cmd = stream_reader.ReadLine();
+                    System.Console.WriteLine(cmd);
+                }
+                catch (IOException e)
+                {
+                    Console.WriteLine(e.Message);
                     break;
                 }
 
-                //  Protocol handler
-                switch (cmd.ToLower())
-                {
-                    case "hentalle":
-                        string all_json = JsonSerializer.Serialize<List<FootballPlayer>>(player_catalog);
-                        send_message(all_json);
-                        break;
-                    case "hent":
-                        int arg = int.Parse(stream_reader.ReadLine());
-                        string one_json = JsonSerializer.Serialize(player_catalog.FirstOrDefault(f => f.Id == arg));
-                        send_message(one_json);
-                        break;
-                    case "gem":
-                        string obj_arg = stream_reader.ReadLine();
-                        FootballPlayer f = JsonSerializer.Deserialize<FootballPlayer>(obj_arg);
-                        player_catalog.Add(f);
-                        Console.WriteLine("New player added to catalog : " + obj_arg);
-                        break;
-                    default:
-                        send_message("Please send valid commands");
-                        break;
-                }
             }
+            Console.WriteLine("Closing socket");
+            socket.Close();
         }
         private static void send_message(string msg)
         {
             stream_writer.WriteLine(msg);
             stream_writer.Flush();
+        }
+
+        private static void check_protocol(string cmd)
+        {
+            switch (cmd.ToLower())
+            {
+                case "hentalle":
+                    string all_json = JsonSerializer.Serialize<List<FootballPlayer>>(player_catalog);
+                    send_message(all_json);
+                    break;
+                case "hent":
+                    int arg = int.Parse(stream_reader.ReadLine());
+                    string one_json = JsonSerializer.Serialize(player_catalog.FirstOrDefault(f => f.Id == arg));
+                    send_message(one_json);
+                    break;
+                case "gem":
+                    string obj_arg = stream_reader.ReadLine();
+                    Console.WriteLine(obj_arg);
+                    FootballPlayer f = JsonSerializer.Deserialize<FootballPlayer>(obj_arg);
+                    player_catalog.Add(f);
+                    Console.WriteLine("New player added to catalog : " + obj_arg);
+                    break;
+                default:
+                    send_message("Please send valid commands");
+                    break;
+            }
         }
     }
 }
