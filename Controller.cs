@@ -11,7 +11,8 @@ namespace opg_5_tcp_server
     {
         private static List<FootballPlayer> player_catalog = new List<FootballPlayer>()
         {
-            new FootballPlayer(1, "Andy", 1000, 30)
+            new FootballPlayer(1, "Andy", 1000, 30),
+            new FootballPlayer(2, "Andy 2", 1000, 30)
         };
 
         private static NetworkStream network_stream;
@@ -22,7 +23,7 @@ namespace opg_5_tcp_server
             network_stream = socket.GetStream();
             stream_reader = new StreamReader(network_stream);
             stream_writer = new StreamWriter(network_stream);
-
+            menu();
             string cmd = stream_reader.ReadLine();
             System.Console.WriteLine(cmd);
             while (cmd.ToLower() != "end")
@@ -30,6 +31,7 @@ namespace opg_5_tcp_server
                 try
                 {
                     check_protocol(cmd);
+                    menu();
                     cmd = stream_reader.ReadLine();
                     System.Console.WriteLine(cmd);
                 }
@@ -49,11 +51,22 @@ namespace opg_5_tcp_server
             stream_writer.Flush();
         }
 
+        private static void menu()
+        {
+            send_message("--- Menu ---");
+            send_message("Skriv en af de følgende kommandoer");
+            send_message("\"hentalle\" efterfulgt at en tom linje");
+            send_message("\"hent\" efterfulgt at et ID");
+            send_message("\"gem\" efterfulgt at et Objekt");
+            send_message("--- ---- ---");
+        }
+
         private static void check_protocol(string cmd)
         {
             switch (cmd.ToLower())
             {
                 case "hentalle":
+                    string empty = stream_reader.ReadLine();
                     string all_json = JsonSerializer.Serialize<List<FootballPlayer>>(player_catalog);
                     send_message(all_json);
                     break;
@@ -67,6 +80,7 @@ namespace opg_5_tcp_server
                     Console.WriteLine(obj_arg);
                     FootballPlayer f = JsonSerializer.Deserialize<FootballPlayer>(obj_arg);
                     player_catalog.Add(f);
+                    send_message($"Added new player with id {f.Id}, name {f.Name}");
                     Console.WriteLine("New player added to catalog : " + obj_arg);
                     break;
                 default:
